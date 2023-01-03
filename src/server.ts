@@ -16,22 +16,50 @@ const app = express();
 app.use(express.json()); //add JSON body parser to each following route handler
 app.use(cors()); //add CORS support to each following route handler
 
-
 app.get("/", async (req, res) => {
   res.json({ msg: "Hello! There's nothing interesting for GET /" });
 });
 
-app.get("/health-check", async (req, res) => {
-  try {
-    //For this to be successful, must connect to db
-    await client.query("select now()");
-    res.status(200).send("system ok");
-  } catch (error) {
-    //Recover from error rather than letting system halt
+app.get("/pastes", async (req, res) => {
+  
+  console.log("get request")
+  try{
+    const queryText = "SELECT title, content FROM pastes ORDER BY time LIMIT 10"
+    const queryResponse = await client.query(queryText)
+    res.json(queryResponse.rows)
+  }
+  catch (error){
     console.error(error);
-    res.status(500).send("An error occurred. Check server logs.");
+    res.status(500).send("An error occurred when fetching pastes. Check server logs.");
   }
 });
+
+app.post<{},{},{title: string, content: string}>("/pastes", async (req, res) => {
+  try{
+    const title = req.body.title
+    const content = req.body.content
+    const queryText = "INSERT INTO pastes (title, content) VALUES ($1, $2) RETURNING *"
+    const queryValues = [title, content]
+    const queryResponse = await client.query(queryText, queryValues)
+    res.json(queryResponse.rows[0])
+  }
+  catch(error){
+    console.error(error);
+    res.status(500).send("An error occurred when posting a paste. Check server logs.");
+  }
+});
+
+// app.get("/health-check", async (req, res) => {
+//   try {
+//     //For this to be successful, must connect to db
+//     await client.query("select now()");
+//     res.status(200).send("system ok");
+//   } catch (error) {
+//     //Recover from error rather than letting system halt
+//     console.error(error);
+//     res.status(500).send("An error occurred. Check server logs.");
+//   }
+// });
 
 connectToDBAndStartListening();
 
