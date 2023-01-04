@@ -54,6 +54,28 @@ app.post<{}, {}, { title: string; content: string }>(
   }
 );
 
+app.delete<{ pasteId: string}, {}, {}>(
+  "/pastes/:pasteId",
+  async (req, res) => {
+    try {
+      const queryValues = [req.params.pasteId]
+      const queryText =
+        "DELETE FROM pastes WHERE id = $1";
+      const queryResponse = await client.query(queryText, queryValues);
+      res.json(queryResponse.rows[0]);
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .send("An error occurred when posting a paste. Check server logs.");
+    }
+  }
+);
+
+
+
+
+
 app.get<{ pasteId: string }, {}, {}>("/pastes/:pasteId/comments", async (req, res) => {
   try {
     const queryValues = [req.params.pasteId]
@@ -73,8 +95,8 @@ app.post<{ pasteId: string }, {}, { comment: string }>(
   async (req, res) => {
     try {
       const queryText =
-        "INSERT INTO comments (id, paste_id) VALUES ($1) RETURNING *";
-      const queryValues = [req.body.comment, req.params.pasteId];
+        "INSERT INTO comments (paste_id, comment) VALUES ($1, $2) RETURNING *";
+      const queryValues = [req.params.pasteId, req.body.comment];
       const queryResponse = await client.query(queryText, queryValues);
       res.json(queryResponse.rows[0]);
     } catch (error) {
