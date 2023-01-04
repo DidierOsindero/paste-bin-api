@@ -54,17 +54,57 @@ app.post<{}, {}, { title: string; content: string }>(
   }
 );
 
-// app.get("/health-check", async (req, res) => {
-//   try {
-//     //For this to be successful, must connect to db
-//     await client.query("select now()");
-//     res.status(200).send("system ok");
-//   } catch (error) {
-//     //Recover from error rather than letting system halt
-//     console.error(error);
-//     res.status(500).send("An error occurred. Check server logs.");
-//   }
-// });
+app.get<{ pasteId: string }, {}, {}>("/pastes/:pasteId/comments", async (req, res) => {
+  try {
+    const queryValues = [req.params.pasteId]
+    const queryText = "SELECT * FROM comments WHERE paste_id = $1";
+    const queryResponse = await client.query(queryText, queryValues);
+    res.json(queryResponse.rows);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send("An error occurred when fetching comments for that post. Check server logs.");
+  }
+});
+
+app.post<{ pasteId: string }, {}, { comment: string }>(
+  "/pastes/:pasteId/comments",
+  async (req, res) => {
+    try {
+      const queryText =
+        "INSERT INTO comments (id, paste_id) VALUES ($1) RETURNING *";
+      const queryValues = [req.body.comment, req.params.pasteId];
+      const queryResponse = await client.query(queryText, queryValues);
+      res.json(queryResponse.rows[0]);
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .send("An error occurred when posting a comment. Check server logs.");
+    }
+  }
+);
+
+
+app.delete<{ id: string }, {}, {}>(
+  "/pastes/:pasteId/comments/:commentId",
+  async (req, res) => {
+    try {
+      const queryText =
+        "DELETE FROM comments WHERE (id = $1) VALUES ($1) RETURNING *";
+      const queryValues = [req.params.id];
+      const queryResponse = await client.query(queryText, queryValues);
+      res.json(queryResponse.rows[0]);
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .send("An error occurred when deleting a comment. Check server logs.");
+    }
+  }
+);
+
 
 connectToDBAndStartListening();
 
