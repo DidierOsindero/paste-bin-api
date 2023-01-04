@@ -58,16 +58,19 @@ app.delete<{ pasteId: string}, {}, {}>(
   "/pastes/:pasteId",
   async (req, res) => {
     try {
+      client.query("BEGIN;")
       const queryValues = [req.params.pasteId]
-      const queryText =
-        "DELETE FROM pastes WHERE id = $1";
+      const queryText2 = "DELETE FROM comments WHERE paste_id = $1"
+      const queryText = "DELETE FROM pastes WHERE id = $1 RETURNING * ";
+      const queryResponse2 = await client.query(queryText2, queryValues);
       const queryResponse = await client.query(queryText, queryValues);
+      client.query("COMMIT;")
       res.json(queryResponse.rows[0]);
     } catch (error) {
       console.error(error);
       res
         .status(500)
-        .send("An error occurred when posting a paste. Check server logs.");
+        .send("An error occurred when deleting a paste. Check server logs.");
     }
   }
 );
