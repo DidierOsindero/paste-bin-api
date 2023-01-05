@@ -54,18 +54,25 @@ app.post<{}, {}, { title: string; content: string }>(
   }
 );
 
-app.delete<{ pasteId: string}, {}, {}>(
+app.delete<{ pasteId: string }, {}, {}>(
   "/pastes/:pasteId",
   async (req, res) => {
     try {
-      client.query("BEGIN;")
-      const queryValues = [req.params.pasteId]
-      const queryText2 = "DELETE FROM comments WHERE paste_id = $1"
-      const queryText = "DELETE FROM pastes WHERE id = $1 RETURNING * ";
-      const queryResponse2 = await client.query(queryText2, queryValues);
-      const queryResponse = await client.query(queryText, queryValues);
-      client.query("COMMIT;")
-      res.json(queryResponse.rows[0]);
+      client.query("BEGIN;");
+      const queryValues = [req.params.pasteId];
+      const queryToDeleteComments = "DELETE FROM comments WHERE paste_id = $1";
+      const queryToDeletePaste =
+        "DELETE FROM pastes WHERE id = $1 RETURNING * ";
+      const deleteCommentsResponse = await client.query(
+        queryToDeleteComments,
+        queryValues
+      );
+      const deletePasteResponse = await client.query(
+        queryToDeletePaste,
+        queryValues
+      );
+      client.query("COMMIT;");
+      res.json(deletePasteResponse.rows[0]);
     } catch (error) {
       console.error(error);
       res
@@ -75,23 +82,24 @@ app.delete<{ pasteId: string}, {}, {}>(
   }
 );
 
-
-
-
-
-app.get<{ pasteId: string }, {}, {}>("/pastes/:pasteId/comments", async (req, res) => {
-  try {
-    const queryValues = [req.params.pasteId]
-    const queryText = "SELECT * FROM comments WHERE paste_id = $1";
-    const queryResponse = await client.query(queryText, queryValues);
-    res.json(queryResponse.rows);
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .send("An error occurred when fetching comments for that post. Check server logs.");
+app.get<{ pasteId: string }, {}, {}>(
+  "/pastes/:pasteId/comments",
+  async (req, res) => {
+    try {
+      const queryValues = [req.params.pasteId];
+      const queryText = "SELECT * FROM comments WHERE paste_id = $1";
+      const queryResponse = await client.query(queryText, queryValues);
+      res.json(queryResponse.rows);
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .send(
+          "An error occurred when fetching comments for that post. Check server logs."
+        );
+    }
   }
-});
+);
 
 app.post<{ pasteId: string }, {}, { comment: string }>(
   "/pastes/:pasteId/comments",
@@ -111,7 +119,6 @@ app.post<{ pasteId: string }, {}, { comment: string }>(
   }
 );
 
-
 app.delete<{ id: string }, {}, {}>(
   "/pastes/:pasteId/comments/:commentId",
   async (req, res) => {
@@ -129,7 +136,6 @@ app.delete<{ id: string }, {}, {}>(
     }
   }
 );
-
 
 connectToDBAndStartListening();
 
