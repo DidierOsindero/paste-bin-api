@@ -119,13 +119,13 @@ app.post<{ pasteId: string }, {}, { comment: string }>(
   }
 );
 
-app.delete<{ id: string }, {}, {}>(
+app.delete<{ commentId: string }, {}, {}>(
   "/pastes/:pasteId/comments/:commentId",
   async (req, res) => {
     try {
       const queryText =
-        "DELETE FROM comments WHERE (id = $1) VALUES ($1) RETURNING *";
-      const queryValues = [req.params.id];
+        "DELETE FROM comments WHERE (id = $1) RETURNING *";
+      const queryValues = [req.params.commentId];
       const queryResponse = await client.query(queryText, queryValues);
       res.json(queryResponse.rows[0]);
     } catch (error) {
